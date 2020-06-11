@@ -14,6 +14,7 @@ namespace LibraProgramming.Windows.Interactivity
         private readonly Task task;
         //private readonly CountdownEvent semaphore;
         private readonly CancellationTokenSource cts;
+        private readonly PulseAwaiter semaphore;
 
         public WorkItemExecutor(CoreDispatcher dispatcher)
         {
@@ -22,6 +23,7 @@ namespace LibraProgramming.Windows.Interactivity
             //timer = ThreadPoolTimer.CreatePeriodicTimer(DoTimer, TimeSpan.FromMilliseconds(50));
             task = Task.Factory.StartNew(DoTaskAsync);
             //semaphore = new CountdownEvent(0);
+            semaphore = new PulseAwaiter();
             cts = new CancellationTokenSource();
         }
 
@@ -34,8 +36,7 @@ namespace LibraProgramming.Windows.Interactivity
 
             queue.Enqueue(action.Invoke);
 
-            //semaphore.AddCount();
-            //semaphore.Signal();
+            semaphore.Pulse();
         }
 
         public void Cancel()
@@ -49,26 +50,16 @@ namespace LibraProgramming.Windows.Interactivity
 
             try
             {
-                var spinWait = new SpinWait();
-
                 while (false == cts.Token.IsCancellationRequested)
                 {
-                    /*var hasSignal = semaphore.Wait(timeout, cts.Token);
+                    await semaphore.WaitAsync();
 
-                    if (false == hasSignal)
+                    if (queue.TryDequeue(out var action))
                     {
-                        continue;
-                    }*/
-
-                    if (false == queue.TryDequeue(out var action))
-                    {
-                        spinWait.SpinOnce();
-                        continue;
+                        await dispatcher
+                            .RunAsync(CoreDispatcherPriority.Normal, action)
+                            .AsTask();
                     }
-
-                    await dispatcher
-                        .RunAsync(CoreDispatcherPriority.Normal, action)
-                        .AsTask();
                 }
             }
             finally
@@ -77,16 +68,34 @@ namespace LibraProgramming.Windows.Interactivity
             }
         }
 
-        /*private async void DoTimer(ThreadPoolTimer _)
+        private sealed class PulseAwaiter
         {
-            if (false == queue.TryDequeue(out var action))
+            private readonly ConcurrentQueue<TaskCompletionSource<bool>> waiters;
+
+            public PulseAwaiter()
             {
-                return;
+                waiters = new ConcurrentQueue<TaskCompletionSource<bool>>();
             }
 
-            await dispatcher
-                .RunAsync(CoreDispatcherPriority.Normal, action)
-                .AsTask();
-        }*/
+            public void Pulse()
+            {
+                if (waiters.TryDequeue(out var tcs))
+                {
+                    tcs.SetResult(true);
+                }
+            }
+
+            public Task WaitAsync()
+            {
+                if (false == waiters.TryPeek(out var tcs))
+                {
+                    tcs = new TaskCompletionSource<bool>();
+
+                    waiters.Enqueue(tcs);
+                }
+
+                return tcs.Task;
+            }
+        }
     }
 }

@@ -115,6 +115,7 @@
     <Compile Include="EventRegistration.cs" />
     <Compile Include="EventTrigger.cs" />
     <Compile Include="EventTriggerBase.cs" />
+    <Compile Include="Extensions\CancellationTokenExtensions.cs" />
     <Compile Include="FrameworkElementCollection.cs" />
     <Compile Include="FrameworkElementExtension.cs" />
     <Compile Include="IAttachedObject.cs" />
@@ -151,6 +152,7 @@
       <Version>6.2.10</Version>
     </PackageReference>
   </ItemGroup>
+  <ItemGroup />
   <PropertyGroup Condition=" '$(VisualStudioVersion)' == '' or '$(VisualStudioVersion)' &lt; '14.0' ">
     <VisualStudioVersion>14.0</VisualStudioVersion>
   </PropertyGroup>
