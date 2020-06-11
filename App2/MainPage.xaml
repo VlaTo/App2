@@ -1,0 +1,68 @@
+﻿<Page
+    x:Class="App2.MainPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:i="using:LibraProgramming.Windows.Interactivity"
+    xmlns:int="using:LibraProgramming.Windows.Interaction"
+    mc:Ignorable="d"
+    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
+    DataContext="{Binding Path=MainPageModel, Source={StaticResource ViewModelLocator}}">
+    <i:Interaction.Triggers>
+        <int:InteractionRequestTrigger 
+            SourceObject="{Binding Path=RayTracerRequest}">
+            <i:CallMethodAction
+                MethodName="DoRayTracerRequest"
+            />
+        </int:InteractionRequestTrigger>
+    </i:Interaction.Triggers>
+    <Page.TopAppBar>
+        <CommandBar>
+            <CommandBar.Content>
+                <TextBlock
+                    Style="{ThemeResource TitleTextBlockStyle}"
+                    Margin="12,4"
+                    Text="Preview"
+                />
+            </CommandBar.Content>
+            <CommandBar.PrimaryCommands>
+                <AppBarButton
+                    Command="{Binding Path=TraceCommand}"
+                    Label="Trace">
+                    <AppBarButton.Icon>
+                        <SymbolIcon Symbol="Refresh" />
+                    </AppBarButton.Icon>
+                </AppBarButton>
+                <AppBarButton
+                    IsEnabled="{Binding Path=CanSave, Mode=OneWay}"
+                    Command="{Binding Path=SaveCommand}"
+                    Label="Save">
+                    <AppBarButton.Icon>
+                        <SymbolIcon Symbol="Save" />
+                    </AppBarButton.Icon>
+                </AppBarButton>
+            </CommandBar.PrimaryCommands>
+        </CommandBar>
+    </Page.TopAppBar>
+    <Grid>
+        <ScrollViewer
+            HorizontalScrollBarVisibility="Auto"
+            VerticalScrollBarVisibility="Auto"
+            VerticalScrollMode="Enabled"
+            HorizontalScrollMode="Enabled">
+            <Border
+                BorderBrush="DimGray"
+                BorderThickness="1"
+                Width="640"
+                Height="480">
+                <Image
+                    x:Name="PreviewImage"
+                    x:FieldModifier="private"
+                    Width="640"
+                    Height="480"
+                />
+            </Border>
+        </ScrollViewer>
+    </Grid>
+</Page>
