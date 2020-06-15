@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Numerics;
 using System.Reactive;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
@@ -7,8 +9,11 @@ using System.Reactive.Subjects;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading;
 using System.Threading.Tasks;
+using Windows.ApplicationModel.Activation;
+using Windows.Foundation;
 using Windows.Graphics.Imaging;
 using Windows.UI;
+using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Media.Imaging;
 using RayTracing.Extensions;
 
@@ -51,7 +56,7 @@ namespace RayTracing
         private Task TraceAsync(IObserver<TraceProgressEventArgs> observer, CancellationToken cancellationToken)
         {
             var bitmap = new WriteableBitmap(bitmapWidth, bitmapHeight);
-            var pixelBuffer = bitmap.PixelBuffer.ToArray();
+            var memory = new Memory<byte>(bitmap.PixelBuffer.ToArray());
             
             var chunkSize = (bitmap.PixelWidth * bitmap.PixelHeight) / 100;
             
@@ -62,7 +67,7 @@ namespace RayTracing
             void Report()
             {
                 var source = SoftwareBitmap.CreateCopyFromBuffer(
-                    pixelBuffer.AsBuffer(),
+                    memory.ToArray().AsBuffer(),
                     BitmapPixelFormat.Bgra8,
                     width,
                     height,
@@ -72,30 +77,70 @@ namespace RayTracing
                 observer.OnNext(new TraceProgressEventArgs(source));
             }
 
+            var left = 100;
+            var top = 100;
+            var right = 200;
+            var bottom = 200;
+
+            var hw = width / 2.0f;
+            var hh = height / 2.0f;
+            //var origin = new Vector3(-hw, -hh, -10.0f);
+
+            var col = GetPartitionsCount(width, 16);
+            var rows = GetPartitionsCount(height, 16);
+            var areas = new Queue<Rect>();
+
+            for (int row = 0; row < height; row += 16)
+            {
+                var h = Math.Min(16.0d, height - row);
+
+                for (int column = 0; column < width; column += 16)
+                {
+                    var w = Math.Min(16.0d, width - column);
+                    var area = new Rect(column, row, w, h);
+
+                    areas.Enqueue(area);
+                }
+            }
+
             return Task.Run(() =>
             {
                 try
                 {
                     var currentChunkSize = 0;
+                    var colors = new[] {Colors.DarkCyan, Colors.CadetBlue, Colors.Aqua};
+                    var pos = 0;
 
-                    for (var line = 0; line < height; line++)
+                    while (0 < areas.Count)
                     {
-                        var offset = stride * line;
+                        var area = areas.Dequeue();
+                        var origin = new Vector3(-hw + (float) area.X, -hh + (float) area.Y, -10.0f);
 
-                        for (var column = 0; column < width; column++)
+
+                        for (var line = (int) area.Top; line < (int) area.Bottom; line++)
                         {
-                            var index = offset + (column * 4);
+                            var offset = stride * line;
 
-                            cancellationToken.ThrowIfCancellationRequested();
-
-                            TracePixel(pixelBuffer, index);
-
-                            if (chunkSize < currentChunkSize++)
+                            for (var column = (int) area.Left; column < (int) area.Right; column++)
                             {
-                                currentChunkSize = 0;
-                                Report();
+                                var index = offset + (column * 4);
+
+                                cancellationToken.ThrowIfCancellationRequested();
+
+                                TracePixel(memory.Span, index, ref origin, ref colors[pos]);
+
+                                if (chunkSize < currentChunkSize++)
+                                {
+                                    currentChunkSize = 0;
+                                    Report();
+                                }
                             }
+
+                            origin.X = -hw;
+                            origin.Y += 1.0f;
                         }
+
+                        pos = (pos + 1) % colors.Length;
                     }
 
                     Report();
@@ -106,7 +151,7 @@ namespace RayTracing
                 }
                 finally
                 {
-                    pixelBuffer = null;
+                    memory = null;
                     observer.OnCompleted();
                 }
             }, cancellationToken);
@@ -123,20 +168,21 @@ namespace RayTracing
             return subject.AsObservable();
         }
 
-        private void TracePixel(byte[] pixelBuffer, int position)
+        private void TracePixel(Span<byte> pixelBuffer, int position, ref Vector3 origin, ref Color color)
         {
-            //pixelBuffer[position + 0] = color[0]; // B
-            //pixelBuffer[position + 1] = color[1]; // G
-            //pixelBuffer[position + 2] = color[2]; // R
-            //pixelBuffer[position + 3] = 255; // A
-            
-            pixelBuffer[position + 0] = AmbientColor.B; // B
-            pixelBuffer[position + 1] = AmbientColor.G; // G
-            pixelBuffer[position + 2] = AmbientColor.R; // R
-            pixelBuffer[position + 3] = AmbientColor.A; // A
+            pixelBuffer[position + 0] = color.B; // B
+            pixelBuffer[position + 1] = color.G; // G
+            pixelBuffer[position + 2] = color.R; // R
+            pixelBuffer[position + 3] = color.A; // A
         }
 
-        private void Report(byte[] pixelBuffer, int width, int height)
+        private int GetPartitionsCount(int value, int size)
+        {
+            var reminder = 0 < (value % size) ? 1 : 0;
+            return (value / size) + reminder;
+        }
+
+        /*private void Report(byte[] pixelBuffer, int width, int height)
         {
             var source = SoftwareBitmap.CreateCopyFromBuffer(
                 pixelBuffer.AsBuffer(),
@@ -157,6 +203,6 @@ namespace RayTracing
             {
                 handler.Invoke(this, e);
             }
-        }
+        }*/
     }
 }

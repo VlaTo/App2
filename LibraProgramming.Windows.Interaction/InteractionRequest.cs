@@ -42,7 +42,12 @@ namespace LibraProgramming.Windows.Interaction
                 throw new ArgumentNullException(nameof(callback));
             }
 
-            DoRaiseEvent(new InteractionRequestedEventArgs(context, callback.Invoke));
+            DoRaiseEvent(new InteractionRequestedEventArgs(context, callback));
+        }
+
+        public void Raise(TContext context)
+        {
+            DoRaiseEvent(new InteractionRequestedEventArgs(context, null));
         }
     }
 }

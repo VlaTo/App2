@@ -25,15 +25,13 @@ namespace App2
             }
         }
 
-        private async Task DoUpdateSourceImageAsync(RayTracerRequestContext context, Action callback)
+        private async Task DoUpdateSourceImageAsync(RayTracerRequestContext context, Action _)
         {
             var source = new SoftwareBitmapSource();
 
             await source.SetBitmapAsync(context.Bitmap);
 
             PreviewImage.Source = source;
-
-            callback.Invoke();
         }
     }
 }

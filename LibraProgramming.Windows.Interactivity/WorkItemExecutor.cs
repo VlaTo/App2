@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Threading;
 using System.Threading.Tasks;
 using Windows.UI.Core;
+using LibraProgramming.Windows.Interactivity.Extensions;
 
 namespace LibraProgramming.Windows.Interactivity
 {
@@ -10,21 +11,17 @@ namespace LibraProgramming.Windows.Interactivity
     {
         private readonly CoreDispatcher dispatcher;
         private readonly ConcurrentQueue<DispatchedHandler> queue;
-        //private readonly ThreadPoolTimer timer;
         private readonly Task task;
-        //private readonly CountdownEvent semaphore;
         private readonly CancellationTokenSource cts;
-        private readonly PulseAwaiter semaphore;
+        private TaskCompletionSource<bool> tcs;
 
         public WorkItemExecutor(CoreDispatcher dispatcher)
         {
             this.dispatcher = dispatcher;
             queue = new ConcurrentQueue<DispatchedHandler>();
-            //timer = ThreadPoolTimer.CreatePeriodicTimer(DoTimer, TimeSpan.FromMilliseconds(50));
             task = Task.Factory.StartNew(DoTaskAsync);
-            //semaphore = new CountdownEvent(0);
-            semaphore = new PulseAwaiter();
             cts = new CancellationTokenSource();
+            tcs = new TaskCompletionSource<bool>();
         }
 
         public void QueueItem(Action action)
@@ -36,7 +33,7 @@ namespace LibraProgramming.Windows.Interactivity
 
             queue.Enqueue(action.Invoke);
 
-            semaphore.Pulse();
+            tcs?.TrySetResult(true);
         }
 
         public void Cancel()
@@ -50,51 +47,25 @@ namespace LibraProgramming.Windows.Interactivity
 
             try
             {
-                while (false == cts.Token.IsCancellationRequested)
+                var cancellationToken = cts.Token;
+
+                while (false == cancellationToken.IsCancellationRequested)
                 {
-                    await semaphore.WaitAsync();
+                    tcs = new TaskCompletionSource<bool>();
+
+                    await Task.WhenAny(tcs.Task, Task.Delay(timeout), cancellationToken.AsTask());
 
                     if (queue.TryDequeue(out var action))
                     {
                         await dispatcher
                             .RunAsync(CoreDispatcherPriority.Normal, action)
-                            .AsTask();
+                            .AsTask(cancellationToken);
                     }
                 }
             }
             finally
             {
                 ;
-            }
-        }
-
-        private sealed class PulseAwaiter
-        {
-            private readonly ConcurrentQueue<TaskCompletionSource<bool>> waiters;
-
-            public PulseAwaiter()
-            {
-                waiters = new ConcurrentQueue<TaskCompletionSource<bool>>();
-            }
-
-            public void Pulse()
-            {
-                if (waiters.TryDequeue(out var tcs))
-                {
-                    tcs.SetResult(true);
-                }
-            }
-
-            public Task WaitAsync()
-            {
-                if (false == waiters.TryPeek(out var tcs))
-                {
-                    tcs = new TaskCompletionSource<bool>();
-
-                    waiters.Enqueue(tcs);
-                }
-
-                return tcs.Task;
             }
         }
     }

@@ -41,15 +41,15 @@ namespace App2
         {
             this.rayTracer = rayTracer;
 
-            rayTracer.AmbientColor = Colors.Beige;
+            rayTracer.AmbientColor = Colors.DarkCyan;
 
             RayTracerRequest = new InteractionRequest<RayTracerRequestContext>();
             SaveCommand = new DelegateCommand(DoSaveCommand, _ => CanSave);
             TraceCommand = new DelegateCommand(DoTraceCommand);
 
-            rayTracer.Progress += DoRayTracerProgress;
+            /*rayTracer.Progress += DoRayTracerProgress;
 
-            /*TraceProgressObservable = Observable.FromEventPattern<TraceProgressEventArgs>(
+            TraceProgressObservable = Observable.FromEventPattern<TraceProgressEventArgs>(
                 handler => rayTracer.Progress += handler,
                 handler => rayTracer.Progress -= handler
             );*/
@@ -62,38 +62,9 @@ namespace App2
 
         private void DoTraceCommand(object obj)
         {
-            Debug.WriteLine("DoTraceCommand start");
-
             var disposable = rayTracer.Trace.Subscribe(e =>
-            {
-                Debug.WriteLine("DoTraceCommand onNext");
-
-                var content = new RayTracerRequestContext(e.Bitmap);
-
-                RayTracerRequest.Raise(content, () =>
-                {
-                    Debug.WriteLine("Raytrace callback");
-                });
-            });
-
-            Debug.WriteLine("DoTraceCommand done");
-
-            /*cancellationTokenSource = new CancellationTokenSource();
-
-            try
-            {
-                await rayTracer.TraceAsync(cancellationTokenSource.Token);
-            }
-            finally
-            {
-                cancellationTokenSource = null;
-            }*/
-        }
-
-        private void DoRayTracerProgress(object sender, TraceProgressEventArgs e)
-        {
-            var content = new RayTracerRequestContext(e.Bitmap);
-            RayTracerRequest.Raise(content, () => { });
+                RayTracerRequest.Raise(new RayTracerRequestContext(e.Bitmap))
+            );
         }
     }
 }
