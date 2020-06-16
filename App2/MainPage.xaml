@@ -16,6 +16,12 @@
                 MethodName="DoRayTracerRequest"
             />
         </int:InteractionRequestTrigger>
+        <int:InteractionRequestTrigger 
+            SourceObject="{Binding Path=SaveBitmapRequest}">
+            <i:CallMethodAction
+                MethodName="DoSaveBitmapRequest"
+            />
+        </int:InteractionRequestTrigger>
     </i:Interaction.Triggers>
     <Page.TopAppBar>
         <CommandBar>
@@ -28,14 +34,13 @@
             </CommandBar.Content>
             <CommandBar.PrimaryCommands>
                 <AppBarButton
-                    Command="{Binding Path=TraceCommand}"
+                    Command="{Binding Path=TraceCommand, Mode=OneTime}"
                     Label="Trace">
                     <AppBarButton.Icon>
                         <SymbolIcon Symbol="Refresh" />
                     </AppBarButton.Icon>
                 </AppBarButton>
                 <AppBarButton
-                    IsEnabled="{Binding Path=CanSave, Mode=OneWay}"
                     Command="{Binding Path=SaveCommand}"
                     Label="Save">
                     <AppBarButton.Icon>
@@ -51,16 +56,17 @@
             VerticalScrollBarVisibility="Auto"
             VerticalScrollMode="Enabled"
             HorizontalScrollMode="Enabled"
-            VerticalContentAlignment="Center"
-            HorizontalContentAlignment="Center">
-            <Grid
+            HorizontalContentAlignment="Center"
+            VerticalContentAlignment="Center">
+            <Border
                 BorderBrush="DimGray"
                 BorderThickness="1"
-                Width="640"
-                Height="480">
+                Width="{Binding Path=BitmapWidth, Mode=OneTime}"
+                Height="{Binding Path=BitmapHeight, Mode=OneTime}">
                 <Image
                     x:Name="PreviewImage"
-                    x:FieldModifier="private"
+                    VerticalAlignment="Top"
+                    HorizontalAlignment="Left"
                 />
             </Grid>
         </ScrollViewer>

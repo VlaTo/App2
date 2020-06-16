@@ -62,8 +62,6 @@ namespace LibraProgramming.Windows.Interactivity
             base.Attach(element);
             
             Actions.Attach(element);
-            
-            OnAttached();
         }
 
         protected void DoInvokeActions(object parameter)

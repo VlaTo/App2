@@ -99,7 +99,14 @@ namespace LibraProgramming.Windows.Core
                 index++;
             }
 
-            var @delegate = Delegate.Combine(list.ToArray());
+            var handlers = list.ToArray();
+
+            if (0 == handlers.Length)
+            {
+                return;
+            }
+
+            var @delegate = Delegate.Combine(handlers);
 
             @delegate.DynamicInvoke(sender, args);
         }

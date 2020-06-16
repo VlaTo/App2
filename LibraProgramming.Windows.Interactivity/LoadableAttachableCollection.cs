@@ -7,7 +7,7 @@ namespace LibraProgramming.Windows.Interactivity
         where T : FrameworkElement, IAttachedObject
     {
         private bool isLoaded;
-//        private WeakReference<FrameworkElement> reference;
+        private WeakLifetimeObserver observer;
 
         public void AttachedObjectLoaded(FrameworkElement element)
         {
@@ -38,7 +38,8 @@ namespace LibraProgramming.Windows.Interactivity
         protected override void DoAttach(FrameworkElement element)
         {
             base.DoAttach(element);
-            new WeakLifetimeObserver(element, this);
+
+            observer = new WeakLifetimeObserver(element, this);
         }
     }
 }

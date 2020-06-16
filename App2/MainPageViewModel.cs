@@ -9,14 +9,18 @@ using App2.InteractionContexts;
 using LibraProgramming.Windows.Core;
 using LibraProgramming.Windows.Interaction;
 using RayTracing;
+using System;
+using System.Reactive.Linq;
+using Windows.UI;
 
 namespace App2
 {
     public class MainPageViewModel : ViewModelBase
     {
         private readonly RayTracer rayTracer;
-        private CancellationTokenSource cancellationTokenSource;
         private bool canSave;
+        private double bitmapWidth;
+        private double bitmapHeight;
 
         public bool CanSave
         {
@@ -34,13 +38,14 @@ namespace App2
             get;
         }
 
-        public InteractionRequest<RayTracerRequestContext> RayTracerRequest
+        public InteractionRequest<BitmapRequestContext> RayTracerRequest
         {
             get;
         }
 
-        public MainPageViewModel(RayTracer rayTracer)
+        public InteractionRequest<BitmapRequestContext> SaveBitmapRequest
         {
+            get;
             this.rayTracer = rayTracer;
 
             rayTracer.Scene = new Scene
@@ -61,45 +66,42 @@ namespace App2
             TraceCommand = new DelegateCommand(DoTraceCommand);
         }
 
-        private void DoSaveCommand(object parameter)
+        public double BitmapWidth
         {
-            ;
+            get => bitmapWidth;
+            set => SetValue(ref bitmapWidth, value);
         }
 
-        private void DoTraceCommand(object obj)
+        public double BitmapHeight
         {
-            Debug.WriteLine("DoTraceCommand start");
+            get => bitmapHeight;
+            set => SetValue(ref bitmapHeight, value);
+        }
 
-            var disposable = rayTracer.Trace.Subscribe(e =>
-            {
-                Debug.WriteLine("DoTraceCommand onNext");
+        public MainPageViewModel(RayTracer rayTracer)
+        {
+            this.rayTracer = rayTracer;
 
-                var content = new RayTracerRequestContext(e.Bitmap);
+            rayTracer.AmbientColor = Colors.DarkCyan;
 
-                RayTracerRequest.Raise(content, () =>
-                {
-                    Debug.WriteLine("Raytrace callback");
-                });
-            });
+            RayTracerRequest = new InteractionRequest<BitmapRequestContext>();
+            SaveBitmapRequest = new InteractionRequest<BitmapRequestContext>();
 
-            Debug.WriteLine("DoTraceCommand done");
+            SaveCommand = new DelegateCommand(DoSaveCommand);
+            TraceCommand = new DelegateCommand(DoTraceCommand);
+        }
 
-            /*cancellationTokenSource = new CancellationTokenSource();
-
-            try
-            {
-                await rayTracer.TraceAsync(cancellationTokenSource.Token);
-            }
-            finally
-            {
-                cancellationTokenSource = null;
-            }*/
+        private void DoSaveCommand(object parameter)
+        {
+            SaveBitmapRequest.Raise(new BitmapRequestContext(rayTracer.Bitmap));
         }
 
         private void DoRayTracerProgress(object sender, TraceProgress e)
         {
-            var content = new RayTracerRequestContext(e.Bitmap);
-            RayTracerRequest.Raise(content, () => { });
+            var disposable = rayTracer.Trace.Subscribe(
+                e => RayTracerRequest.Raise(new BitmapRequestContext(e.Bitmap)),
+                () => CanSave = true
+            );
         }
     }
 }

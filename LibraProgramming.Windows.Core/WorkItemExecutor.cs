@@ -4,6 +4,7 @@ using System.Collections.Concurrent;
 using System.Threading;
 using System.Threading.Tasks;
 using Windows.UI.Core;
+using LibraProgramming.Windows.Interactivity.Extensions;
 
 namespace LibraProgramming.Windows.Core
 {
@@ -51,16 +52,19 @@ namespace LibraProgramming.Windows.Core
 
                 while (false == cancellationToken.IsCancellationRequested)
                 {
-                    pulse = new TaskCompletionSource();
+                    var success = queue.TryDequeue(out var action);
 
-                    await Task.WhenAny(pulse.Task, Task.Delay(timeout), cancellationToken.AsTask());
-
-                    if (queue.TryDequeue(out var action))
+                    if (success)
                     {
                         await dispatcher
                             .RunAsync(CoreDispatcherPriority.Normal, action)
                             .AsTask(cancellationToken);
+                        continue;
                     }
+
+                    tcs = new TaskCompletionSource<bool>();
+
+                    await Task.WhenAny(tcs.Task, Task.Delay(timeout), cancellationToken.AsTask());
                 }
             }
             finally

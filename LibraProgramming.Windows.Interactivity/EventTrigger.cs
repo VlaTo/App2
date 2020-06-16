@@ -34,7 +34,7 @@ namespace LibraProgramming.Windows.Interactivity
                 .Register(nameof(EventName),
                     typeof (string),
                     typeof (EventTrigger),
-                    new PropertyMetadata("Loaded", OnEventNameChanged)
+                    new PropertyMetadata(nameof(Loaded), OnEventNameChanged)
                 );
         }
 

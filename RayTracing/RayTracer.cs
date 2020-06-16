@@ -1,15 +1,21 @@
 ﻿using LibraProgramming.Windows.Core.Extensions;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Numerics;
+using System.Reactive;
+using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading;
 using System.Threading.Tasks;
+using Windows.ApplicationModel.Activation;
+using Windows.Foundation;
 using Windows.Graphics.Imaging;
 using Windows.UI;
+using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Media.Imaging;
 
 namespace RayTracing
@@ -43,10 +49,20 @@ namespace RayTracing
 
         private readonly int bitmapWidth;
         private readonly int bitmapHeight;
+        private CancellationTokenSource cts;
+        private Task traceTask;
 
-        public IObservable<TraceProgress> Trace => Observable.Defer(DoTrace);
+        public IObservable<TraceProgressEventArgs> Trace => Observable.Defer(DoTrace);
 
-        public Scene Scene
+        public bool IsTracing => TaskStatus.RanToCompletion == traceTask.Status;
+
+        public SoftwareBitmap Bitmap
+        {
+            get;
+            private set;
+        }
+
+        public Color AmbientColor
         {
             get;
             set;
@@ -56,86 +72,130 @@ namespace RayTracing
         {
             this.bitmapWidth = bitmapWidth;
             this.bitmapHeight = bitmapHeight;
+
+            traceTask = Task.CompletedTask;
+            cts = default(CancellationTokenSource);
         }
 
-        private Task TraceAsync(IObserver<TraceProgress> observer, CancellationToken cancellationToken)
+        private IObservable<TraceProgressEventArgs> DoTrace()
+        {
+            Debug.WriteLine("Raytrace start");
+
+            var subject = new Subject<TraceProgressEventArgs>();
+
+            cts = new CancellationTokenSource();
+            traceTask = TraceAsync(subject, cts.Token);
+
+            return subject.AsObservable();
+        }
+
+        private Task TraceAsync(IObserver<TraceProgressEventArgs> observer, CancellationToken cancellationToken)
         {
             var bitmap = new WriteableBitmap(bitmapWidth, bitmapHeight);
             var pixelBuffer = bitmap.PixelBuffer.ToArray();
-            
-            var chunkSize = (bitmap.PixelWidth * bitmap.PixelHeight) / 100;
             
             var stride = bitmap.PixelWidth * 4;
             var width = bitmap.PixelWidth;
             var height = bitmap.PixelHeight;
 
-            void Report()
-            {
-                var source = SoftwareBitmap.CreateCopyFromBuffer(
-                    pixelBuffer.AsBuffer(),
-                    BitmapPixelFormat.Bgra8,
-                    width,
-                    height,
-                    BitmapAlphaMode.Premultiplied
-                );
+            SoftwareBitmap CreateBitmap() => SoftwareBitmap.CreateCopyFromBuffer(
+                pixelBuffer.AsBuffer(),
+                BitmapPixelFormat.Bgra8,
+                width,
+                height,
+                BitmapAlphaMode.Premultiplied
+            );
 
-                observer.OnNext(new TraceProgress(source));
+            var contexts = new List<TraceAreaContext>();
+            var canvas = new Dimension(width, height);
+            var cell = new Dimension(16);
+            
+            for (var y = 0; y < canvas.Height; y += cell.Width)
+            {
+                var h = Min.From(cell.Height, height - y);
+
+                for (var x = 0; x < canvas.Width; x += cell.Height)
+                {
+                    var w = Min.From(cell.Width, width - x);
+                    var area = new Area(x, y, w, h);
+
+                    contexts.Add(new TraceAreaContext(area));
+                }
             }
 
-            return Task.Run(() =>
-            {
-                try
+            return Task.Factory.StartNew(() =>
                 {
-                    var currentChunkSize = 0;
-                    var ray = new Ray(Vector3.Zero, Vector3.Zero);
-
-                    for (var line = 0; line < height; line++)
+                    try
                     {
-                        var offset = stride * line;
+                        var center = new PointF(width / 2.0f, height / 2.0f);
+                        var targets = contexts.ToArray();
+                        var colors = new[] {Colors.Cyan, Colors.CadetBlue, Colors.DarkCyan};
 
-                        for (var column = 0; column < width; column++)
+                        for (var index = 0; index < targets.Length; index++)
                         {
-                            var index = offset + (column * 4);
+                            var context = targets[index];
+                            var color = colors[index % colors.Length];
+                            var start = -center.X + context.TargetArea.X;
+                            var origin = new Vector3(start, -center.Y + context.TargetArea.Y, -10.0f);
 
-                            cancellationToken.ThrowIfCancellationRequested();
-
-                            Camera(column, line, ref ray);
-
-                            TracePixel(pixelBuffer, index, Scene.AmbientColor);
-
-                            if (chunkSize < currentChunkSize++)
+                            for (var line = context.TargetArea.Y; line < context.TargetArea.Bottom; line++)
                             {
-                                currentChunkSize = 0;
-                                Report();
+                                var offset = stride * line;
+
+                                for (var column = context.TargetArea.X; column < context.TargetArea.Right; column++)
+                                {
+                                    var position = offset + (column * 4);
+
+                                    cancellationToken.ThrowIfCancellationRequested();
+
+                                    TracePixel(ref pixelBuffer, position, ref origin, ref color);
+
+                                    origin.X++;
+                                }
+
+                                origin.X = start;
+                                origin.Y++;
                             }
+
+                            var source = CreateBitmap();
+
+                            observer.OnNext(new TraceProgressEventArgs(source));
                         }
+
+                        Bitmap = CreateBitmap();
                     }
-
-                    Report();
-                }
-                catch(Exception exception)
-                {
-                    observer.OnError(exception);
-                }
-                finally
-                {
-                    pixelBuffer = null;
-                    observer.OnCompleted();
-                }
-            }, cancellationToken);
+                    catch (Exception exception)
+                    {
+                        observer.OnError(exception);
+                    }
+                    finally
+                    {
+                        observer.OnCompleted();
+                    }
+                },
+                cancellationToken,
+                TaskCreationOptions.LongRunning,
+                TaskScheduler.Current
+            );
         }
 
-        private IObservable<TraceProgress> DoTrace()
+        private static void TracePixel(ref byte[] pixelBuffer, int position, ref Vector3 origin, ref Color color)
         {
-            Debug.WriteLine("Raytrace start");
-
-            var subject = new Subject<TraceProgress>();
-
-            TraceAsync(subject, CancellationToken.None).RunAndForget();
-
-            return subject.AsObservable();
+            pixelBuffer[position + 0] = color.B; // B
+            pixelBuffer[position + 1] = color.G; // G
+            pixelBuffer[position + 2] = color.R; // R
+            pixelBuffer[position + 3] = color.A; // A
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        private sealed class TraceAreaContext
+        {
+            public Area TargetArea
+            {
+                get;
+            }
         private void Camera(int column, int line, ref Ray ray)
         {
             ray.Origin = Eye;
@@ -171,7 +231,10 @@ namespace RayTracing
             var texture = figure.FindTexture(point);
 
             if (null != texture)
+            public TraceAreaContext(Area targetArea)
             {
+                TargetArea = targetArea;
+            }
                 var vn = view & texture.N;
             }
             
