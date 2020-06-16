@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Reactive;
 using System.Reactive.Linq;
 using System.Threading;
+using Windows.Storage.Pickers;
 using Windows.UI;
 using App2.InteractionContexts;
 using LibraProgramming.Windows.Interaction;
@@ -37,6 +38,11 @@ namespace App2
             get;
         }
 
+        public InteractionRequest<SaveBitmapRequestContext> SaveBitmapRequest
+        {
+            get;
+        }
+
         public MainPageViewModel(RayTracer rayTracer)
         {
             this.rayTracer = rayTracer;
@@ -44,26 +50,22 @@ namespace App2
             rayTracer.AmbientColor = Colors.DarkCyan;
 
             RayTracerRequest = new InteractionRequest<RayTracerRequestContext>();
-            SaveCommand = new DelegateCommand(DoSaveCommand, _ => CanSave);
+            SaveBitmapRequest = new InteractionRequest<SaveBitmapRequestContext>();
+
+            SaveCommand = new DelegateCommand(DoSaveCommand);
             TraceCommand = new DelegateCommand(DoTraceCommand);
-
-            /*rayTracer.Progress += DoRayTracerProgress;
-
-            TraceProgressObservable = Observable.FromEventPattern<TraceProgressEventArgs>(
-                handler => rayTracer.Progress += handler,
-                handler => rayTracer.Progress -= handler
-            );*/
         }
 
         private void DoSaveCommand(object parameter)
         {
-            ;
+            SaveBitmapRequest.Raise(new SaveBitmapRequestContext(rayTracer.Bitmap));
         }
 
         private void DoTraceCommand(object obj)
         {
-            var disposable = rayTracer.Trace.Subscribe(e =>
-                RayTracerRequest.Raise(new RayTracerRequestContext(e.Bitmap))
+            var disposable = rayTracer.Trace.Subscribe(
+                e => RayTracerRequest.Raise(new RayTracerRequestContext(e.Bitmap)),
+                () => CanSave = true
             );
         }
     }

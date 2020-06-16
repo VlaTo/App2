@@ -18,9 +18,7 @@ namespace LibraProgramming.Windows.Interactivity
         {
             var element = sender as FrameworkElement;
 
-            ILifetimeTarget target;
-
-            if (reference.TryGetTarget(out target))
+            if (reference.TryGetTarget(out var target))
             {
                 target.AttachedObjectLoaded(element);
             }
@@ -30,9 +28,7 @@ namespace LibraProgramming.Windows.Interactivity
         {
             var element = sender as FrameworkElement;
 
-            ILifetimeTarget target;
-
-            if (reference.TryGetTarget(out target))
+            if (reference.TryGetTarget(out var target))
             {
                 target.AttachedObjectUnloaded(element);
             }

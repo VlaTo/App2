@@ -123,8 +123,13 @@
     <Compile Include="ColorExtensions.cs" />
     <Compile Include="Extensions\TaskExtensions.cs" />
     <Compile Include="HslColor.cs" />
+    <Compile Include="MathF.cs" />
+    <Compile Include="Min.cs" />
+    <Compile Include="PointF.cs" />
     <Compile Include="RayTracer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Area.cs" />
+    <Compile Include="Dimension.cs" />
     <EmbeddedResource Include="Properties\RayTracing.rd.xml" />
   </ItemGroup>
   <ItemGroup>

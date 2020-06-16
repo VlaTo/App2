@@ -16,6 +16,12 @@
                 MethodName="DoRayTracerRequest"
             />
         </int:InteractionRequestTrigger>
+        <int:InteractionRequestTrigger 
+            SourceObject="{Binding Path=SaveBitmapRequest}">
+            <i:CallMethodAction
+                MethodName="DoSaveBitmapRequest"
+            />
+        </int:InteractionRequestTrigger>
     </i:Interaction.Triggers>
     <Page.TopAppBar>
         <CommandBar>
@@ -28,14 +34,13 @@
             </CommandBar.Content>
             <CommandBar.PrimaryCommands>
                 <AppBarButton
-                    Command="{Binding Path=TraceCommand}"
+                    Command="{Binding Path=TraceCommand, Mode=OneTime}"
                     Label="Trace">
                     <AppBarButton.Icon>
                         <SymbolIcon Symbol="Refresh" />
                     </AppBarButton.Icon>
                 </AppBarButton>
                 <AppBarButton
-                    IsEnabled="{Binding Path=CanSave, Mode=OneWay}"
                     Command="{Binding Path=SaveCommand}"
                     Label="Save">
                     <AppBarButton.Icon>
@@ -50,19 +55,20 @@
             HorizontalScrollBarVisibility="Auto"
             VerticalScrollBarVisibility="Auto"
             VerticalScrollMode="Enabled"
-            HorizontalScrollMode="Enabled">
-            <Border
+            HorizontalScrollMode="Enabled"
+            HorizontalContentAlignment="Center"
+            VerticalContentAlignment="Center">
+            <Grid
                 BorderBrush="DimGray"
                 BorderThickness="1"
                 Width="640"
                 Height="480">
                 <Image
                     x:Name="PreviewImage"
-                    x:FieldModifier="private"
-                    Width="640"
-                    Height="480"
+                    VerticalAlignment="Top"
+                    HorizontalAlignment="Left"
                 />
-            </Border>
+            </Grid>
         </ScrollViewer>
     </Grid>
 </Page>

@@ -1,7 +1,14 @@
 ﻿using App2.InteractionContexts;
 using LibraProgramming.Windows.Interaction;
 using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
+using Windows.Graphics.Imaging;
+using Windows.Storage;
+using Windows.Storage.Pickers;
+using Windows.Storage.Streams;
 using Windows.UI.Xaml.Media.Imaging;
 
 namespace App2
@@ -15,23 +22,77 @@ namespace App2
 
         private async void DoRayTracerRequest(object sender, InteractionRequestedEventArgs e)
         {
-            switch (e.Context)
+            if (e.Context is RayTracerRequestContext context)
             {
-                case RayTracerRequestContext tracerRequestContext:
+                var source = new SoftwareBitmapSource();
+
+                await source.SetBitmapAsync(context.Bitmap);
+
+                PreviewImage.Source = source;
+            }
+        }
+
+        private async void DoSaveBitmapRequest(object sender, InteractionRequestedEventArgs e)
+        {
+            if (e.Context is SaveBitmapRequestContext context)
+            {
+                var bitmapEncoders = BitmapEncoder.GetEncoderInformationEnumerator();
+                var picker = CreateFileSavePicker(bitmapEncoders, $"RayTrace-{DateTime.Now:yyyy-MM-dd-HH-mm-ss}");
+                var file = await picker.PickSaveFileAsync();
+
+                if (null != file)
                 {
-                    await DoUpdateSourceImageAsync(tracerRequestContext, e.Callback);
-                    break;
+                    var extension = Path.GetExtension(file.Path);
+
+                    using (var stream = await file.OpenAsync(FileAccessMode.ReadWrite))
+                    {
+                        var encoder = await CreateBitmapEncoderByFileExtension(bitmapEncoders, extension, stream);
+
+                        encoder.SetSoftwareBitmap(context.Bitmap);
+
+                        await encoder.FlushAsync();
+                    }
                 }
             }
         }
 
-        private async Task DoUpdateSourceImageAsync(RayTracerRequestContext context, Action _)
+        private static FileSavePicker CreateFileSavePicker(
+            IReadOnlyList<BitmapCodecInformation> bitmapEncoders,
+            string suggestedFileName)
         {
-            var source = new SoftwareBitmapSource();
+            var picker = new FileSavePicker
+            {
+                SuggestedStartLocation = PickerLocationId.PicturesLibrary,
+                SuggestedFileName = suggestedFileName
+            };
 
-            await source.SetBitmapAsync(context.Bitmap);
+            for (var index = 0; index < bitmapEncoders.Count; index++)
+            {
+                var encoder = bitmapEncoders[index];
+                var fileExtensions = encoder.FileExtensions.ToList();
 
-            PreviewImage.Source = source;
+                picker.FileTypeChoices.Add(encoder.FriendlyName, fileExtensions);
+            }
+
+            return picker;
+        }
+
+        private static Task<BitmapEncoder> CreateBitmapEncoderByFileExtension(
+            IReadOnlyList<BitmapCodecInformation> bitmapEncoders, 
+            string extension, 
+            IRandomAccessStream stream)
+        {
+            for (var index = 0; index < bitmapEncoders.Count; index++)
+            {
+                var codecInformation = bitmapEncoders[index];
+
+                if (codecInformation.FileExtensions.Any(extension.Equals))
+                {
+                    return BitmapEncoder.CreateAsync(codecInformation.CodecId, stream).AsTask();
+                }
+            }
+
+            return Task.FromResult<BitmapEncoder>(null);
         }
     }
 }

@@ -51,16 +51,19 @@ namespace LibraProgramming.Windows.Interactivity
 
                 while (false == cancellationToken.IsCancellationRequested)
                 {
-                    tcs = new TaskCompletionSource<bool>();
+                    var success = queue.TryDequeue(out var action);
 
-                    await Task.WhenAny(tcs.Task, Task.Delay(timeout), cancellationToken.AsTask());
-
-                    if (queue.TryDequeue(out var action))
+                    if (success)
                     {
                         await dispatcher
                             .RunAsync(CoreDispatcherPriority.Normal, action)
                             .AsTask(cancellationToken);
+                        continue;
                     }
+
+                    tcs = new TaskCompletionSource<bool>();
+
+                    await Task.WhenAny(tcs.Task, Task.Delay(timeout), cancellationToken.AsTask());
                 }
             }
             finally
