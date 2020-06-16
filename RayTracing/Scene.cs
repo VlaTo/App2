@@ -2,7 +2,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Numerics;
-using Windows.ApplicationModel.AppExtensions;
 using Windows.UI;
 
 namespace RayTracing

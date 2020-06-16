@@ -4,7 +4,6 @@ using System.Collections.Concurrent;
 using System.Threading;
 using System.Threading.Tasks;
 using Windows.UI.Core;
-using LibraProgramming.Windows.Interactivity.Extensions;
 
 namespace LibraProgramming.Windows.Core
 {
@@ -62,9 +61,9 @@ namespace LibraProgramming.Windows.Core
                         continue;
                     }
 
-                    tcs = new TaskCompletionSource<bool>();
+                    pulse = new TaskCompletionSource();
 
-                    await Task.WhenAny(tcs.Task, Task.Delay(timeout), cancellationToken.AsTask());
+                    await Task.WhenAny(pulse.Task, Task.Delay(timeout), cancellationToken.AsTask());
                 }
             }
             finally

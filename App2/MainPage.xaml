@@ -41,7 +41,7 @@
                     </AppBarButton.Icon>
                 </AppBarButton>
                 <AppBarButton
-                    Command="{Binding Path=SaveCommand}"
+                    Command="{Binding Path=SaveCommand, Mode=OneTime}"
                     Label="Save">
                     <AppBarButton.Icon>
                         <SymbolIcon Symbol="Save" />
@@ -50,25 +50,23 @@
             </CommandBar.PrimaryCommands>
         </CommandBar>
     </Page.TopAppBar>
-    <Grid>
-        <ScrollViewer
-            HorizontalScrollBarVisibility="Auto"
-            VerticalScrollBarVisibility="Auto"
-            VerticalScrollMode="Enabled"
-            HorizontalScrollMode="Enabled"
-            HorizontalContentAlignment="Center"
-            VerticalContentAlignment="Center">
-            <Border
-                BorderBrush="DimGray"
-                BorderThickness="1"
-                Width="{Binding Path=BitmapWidth, Mode=OneTime}"
-                Height="{Binding Path=BitmapHeight, Mode=OneTime}">
-                <Image
-                    x:Name="PreviewImage"
-                    VerticalAlignment="Top"
-                    HorizontalAlignment="Left"
-                />
-            </Grid>
-        </ScrollViewer>
-    </Grid>
+    <ScrollViewer
+        HorizontalScrollBarVisibility="Auto"
+        VerticalScrollBarVisibility="Auto"
+        VerticalScrollMode="Enabled"
+        HorizontalScrollMode="Enabled"
+        HorizontalContentAlignment="Center"
+        VerticalContentAlignment="Center">
+        <Border
+            BorderBrush="DimGray"
+            BorderThickness="1"
+            Width="{Binding Path=BitmapWidth, Mode=OneTime}"
+            Height="{Binding Path=BitmapHeight, Mode=OneTime}">
+            <Image
+                x:Name="PreviewImage"
+                VerticalAlignment="Top"
+                HorizontalAlignment="Left"
+            />
+        </Border>
+    </ScrollViewer>
 </Page>

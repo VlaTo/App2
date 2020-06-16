@@ -1,32 +1,17 @@
-﻿using System;
-using System.Diagnostics;
-using System.Numerics;
-using System.Reactive;
-using System.Reactive.Linq;
-using System.Threading;
-using Windows.UI;
-using App2.InteractionContexts;
+﻿using App2.InteractionContexts;
 using LibraProgramming.Windows.Core;
 using LibraProgramming.Windows.Interaction;
 using RayTracing;
 using System;
 using System.Reactive.Linq;
-using Windows.UI;
 
 namespace App2
 {
     public class MainPageViewModel : ViewModelBase
     {
         private readonly RayTracer rayTracer;
-        private bool canSave;
         private double bitmapWidth;
         private double bitmapHeight;
-
-        public bool CanSave
-        {
-            get => canSave;
-            set => SetValue(ref canSave, value);
-        }
 
         public DelegateCommand SaveCommand
         {
@@ -46,24 +31,6 @@ namespace App2
         public InteractionRequest<BitmapRequestContext> SaveBitmapRequest
         {
             get;
-            this.rayTracer = rayTracer;
-
-            rayTracer.Scene = new Scene
-            {
-                AmbientColor = Colors.DarkCyan,
-                Camera = new Camera(
-                    new Vector3(0.0f, 0.0f, -15.0f),
-                    new Vector3(0.0f, 0.0f, 1.0f),
-                    new Vector3(0.0f, 1.0f, 0.0f)
-                ),
-
-            };
-
-            rayTracer.Scene.Add(new Sphere(new Vector3(0.0f, 0.0f, 0.0f), 2.0f));
-
-            RayTracerRequest = new InteractionRequest<RayTracerRequestContext>();
-            SaveCommand = new DelegateCommand(DoSaveCommand, _ => CanSave);
-            TraceCommand = new DelegateCommand(DoTraceCommand);
         }
 
         public double BitmapWidth
@@ -82,11 +49,21 @@ namespace App2
         {
             this.rayTracer = rayTracer;
 
-            rayTracer.AmbientColor = Colors.DarkCyan;
+            /*rayTracer.Scene = new Scene
+            {
+                AmbientColor = Colors.DarkCyan,
+                Camera = new Camera(
+                    new Vector3(0.0f, 0.0f, -15.0f),
+                    new Vector3(0.0f, 0.0f, 1.0f),
+                    new Vector3(0.0f, 1.0f, 0.0f)
+                ),
+
+            };
+
+            rayTracer.Scene.Add(new Sphere(new Vector3(0.0f, 0.0f, 0.0f), 2.0f));*/
 
             RayTracerRequest = new InteractionRequest<BitmapRequestContext>();
             SaveBitmapRequest = new InteractionRequest<BitmapRequestContext>();
-
             SaveCommand = new DelegateCommand(DoSaveCommand);
             TraceCommand = new DelegateCommand(DoTraceCommand);
         }
@@ -96,11 +73,10 @@ namespace App2
             SaveBitmapRequest.Raise(new BitmapRequestContext(rayTracer.Bitmap));
         }
 
-        private void DoRayTracerProgress(object sender, TraceProgress e)
+        private void DoTraceCommand(object parameter)
         {
             var disposable = rayTracer.Trace.Subscribe(
-                e => RayTracerRequest.Raise(new BitmapRequestContext(e.Bitmap)),
-                () => CanSave = true
+                progress => RayTracerRequest.Raise(new BitmapRequestContext(progress.Bitmap))
             );
         }
     }

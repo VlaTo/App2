@@ -44,6 +44,7 @@ namespace RayTracing
 
             t2hc = (float) Math.Sqrt(t2hc);
 
+            throw new NotImplementedException();
         }
 
     }
