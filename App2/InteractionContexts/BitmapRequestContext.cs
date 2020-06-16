@@ -3,14 +3,14 @@ using LibraProgramming.Windows.Interaction;
 
 namespace App2.InteractionContexts
 {
-    public sealed class RayTracerRequestContext : InteractionRequestContext
+    public sealed class BitmapRequestContext : InteractionRequestContext
     {
         public SoftwareBitmap Bitmap
         {
             get;
         }
 
-        public RayTracerRequestContext(SoftwareBitmap bitmap)
+        public BitmapRequestContext(SoftwareBitmap bitmap)
         {
             Bitmap = bitmap;
         }

@@ -1,21 +1,18 @@
-﻿using System;
-using System.Diagnostics;
-using System.Reactive;
-using System.Reactive.Linq;
-using System.Threading;
-using Windows.Storage.Pickers;
-using Windows.UI;
-using App2.InteractionContexts;
+﻿using App2.InteractionContexts;
 using LibraProgramming.Windows.Interaction;
 using RayTracing;
+using System;
+using System.Reactive.Linq;
+using Windows.UI;
 
 namespace App2
 {
     public class MainPageViewModel : ViewModelBase
     {
         private readonly RayTracer rayTracer;
-        private CancellationTokenSource cancellationTokenSource;
         private bool canSave;
+        private double bitmapWidth;
+        private double bitmapHeight;
 
         public bool CanSave
         {
@@ -33,14 +30,26 @@ namespace App2
             get;
         }
 
-        public InteractionRequest<RayTracerRequestContext> RayTracerRequest
+        public InteractionRequest<BitmapRequestContext> RayTracerRequest
         {
             get;
         }
 
-        public InteractionRequest<SaveBitmapRequestContext> SaveBitmapRequest
+        public InteractionRequest<BitmapRequestContext> SaveBitmapRequest
         {
             get;
+        }
+
+        public double BitmapWidth
+        {
+            get => bitmapWidth;
+            set => SetValue(ref bitmapWidth, value);
+        }
+
+        public double BitmapHeight
+        {
+            get => bitmapHeight;
+            set => SetValue(ref bitmapHeight, value);
         }
 
         public MainPageViewModel(RayTracer rayTracer)
@@ -49,8 +58,8 @@ namespace App2
 
             rayTracer.AmbientColor = Colors.DarkCyan;
 
-            RayTracerRequest = new InteractionRequest<RayTracerRequestContext>();
-            SaveBitmapRequest = new InteractionRequest<SaveBitmapRequestContext>();
+            RayTracerRequest = new InteractionRequest<BitmapRequestContext>();
+            SaveBitmapRequest = new InteractionRequest<BitmapRequestContext>();
 
             SaveCommand = new DelegateCommand(DoSaveCommand);
             TraceCommand = new DelegateCommand(DoTraceCommand);
@@ -58,13 +67,13 @@ namespace App2
 
         private void DoSaveCommand(object parameter)
         {
-            SaveBitmapRequest.Raise(new SaveBitmapRequestContext(rayTracer.Bitmap));
+            SaveBitmapRequest.Raise(new BitmapRequestContext(rayTracer.Bitmap));
         }
 
         private void DoTraceCommand(object obj)
         {
             var disposable = rayTracer.Trace.Subscribe(
-                e => RayTracerRequest.Raise(new RayTracerRequestContext(e.Bitmap)),
+                e => RayTracerRequest.Raise(new BitmapRequestContext(e.Bitmap)),
                 () => CanSave = true
             );
         }

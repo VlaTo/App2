@@ -7,7 +7,11 @@ namespace App2
     {
         private readonly Lazy<RayTracer> rayTracer;
 
-        public MainPageViewModel MainPageModel => new MainPageViewModel(rayTracer.Value);
+        public MainPageViewModel MainPageModel => new MainPageViewModel(rayTracer.Value)
+        {
+            BitmapWidth = 640,
+            BitmapHeight = 480
+        };
 
         public ViewModelLocator()
         {

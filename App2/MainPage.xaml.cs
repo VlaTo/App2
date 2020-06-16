@@ -22,7 +22,7 @@ namespace App2
 
         private async void DoRayTracerRequest(object sender, InteractionRequestedEventArgs e)
         {
-            if (e.Context is RayTracerRequestContext context)
+            if (e.Context is BitmapRequestContext context)
             {
                 var source = new SoftwareBitmapSource();
 
@@ -34,7 +34,7 @@ namespace App2
 
         private async void DoSaveBitmapRequest(object sender, InteractionRequestedEventArgs e)
         {
-            if (e.Context is SaveBitmapRequestContext context)
+            if (e.Context is BitmapRequestContext context)
             {
                 var bitmapEncoders = BitmapEncoder.GetEncoderInformationEnumerator();
                 var picker = CreateFileSavePicker(bitmapEncoders, $"RayTrace-{DateTime.Now:yyyy-MM-dd-HH-mm-ss}");

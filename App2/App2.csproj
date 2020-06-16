@@ -120,8 +120,7 @@
     </Compile>
     <Compile Include="Condition.cs" />
     <Compile Include="DelegateCommand.cs" />
-    <Compile Include="InteractionContexts\RayTracerRequestContext.cs" />
-    <Compile Include="InteractionContexts\SaveBitmapRequestContext.cs" />
+    <Compile Include="InteractionContexts\BitmapRequestContext.cs" />
     <Compile Include="MainPage.xaml.cs">
       <DependentUpon>MainPage.xaml</DependentUpon>
     </Compile>

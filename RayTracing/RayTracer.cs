@@ -86,18 +86,13 @@ namespace RayTracing
             var width = bitmap.PixelWidth;
             var height = bitmap.PixelHeight;
 
-            void Report()
-            {
-                var source = SoftwareBitmap.CreateCopyFromBuffer(
-                    pixelBuffer.AsBuffer(),
-                    BitmapPixelFormat.Bgra8,
-                    width,
-                    height,
-                    BitmapAlphaMode.Premultiplied
-                );
-
-                observer.OnNext(new TraceProgressEventArgs(source));
-            }
+            SoftwareBitmap CreateBitmap() => SoftwareBitmap.CreateCopyFromBuffer(
+                pixelBuffer.AsBuffer(),
+                BitmapPixelFormat.Bgra8,
+                width,
+                height,
+                BitmapAlphaMode.Premultiplied
+            );
 
             var contexts = new List<TraceAreaContext>();
             var canvas = new Dimension(width, height);
@@ -120,7 +115,6 @@ namespace RayTracing
                 {
                     try
                     {
-
                         var center = new PointF(width / 2.0f, height / 2.0f);
                         var targets = contexts.ToArray();
                         var colors = new[] {Colors.Cyan, Colors.CadetBlue, Colors.DarkCyan};
@@ -151,16 +145,12 @@ namespace RayTracing
                                 origin.Y++;
                             }
 
-                            Report();
+                            var source = CreateBitmap();
+
+                            observer.OnNext(new TraceProgressEventArgs(source));
                         }
 
-                        Bitmap = SoftwareBitmap.CreateCopyFromBuffer(
-                            pixelBuffer.AsBuffer(),
-                            BitmapPixelFormat.Bgra8,
-                            width,
-                            height,
-                            BitmapAlphaMode.Premultiplied
-                        );
+                        Bitmap = CreateBitmap();
                     }
                     catch (Exception exception)
                     {
