@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Threading.Tasks;
 
-namespace RayTracing.Extensions
+namespace LibraProgramming.Windows.Core.Extensions
 {
-    internal static class TaskExtensions
+    public static class TaskExtensions
     {
         public static void RunAndForget(this Task task)
         {

@@ -1,7 +1,7 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
 
-namespace LibraProgramming.Windows.Interactivity.Extensions
+namespace LibraProgramming.Windows.Core.Extensions
 {
     internal static class CancellationTokenExtensions
     {

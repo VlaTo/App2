@@ -1,7 +1,8 @@
-﻿using System;
+﻿using LibraProgramming.Windows.Core.Extensions;
+using System;
 using System.Diagnostics;
-using System.Reactive;
-using System.Reactive.Disposables;
+using System.Linq;
+using System.Numerics;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Runtime.InteropServices.WindowsRuntime;
@@ -10,33 +11,42 @@ using System.Threading.Tasks;
 using Windows.Graphics.Imaging;
 using Windows.UI;
 using Windows.UI.Xaml.Media.Imaging;
-using RayTracing.Extensions;
 
 namespace RayTracing
 {
-    public sealed class TraceProgressEventArgs : EventArgs
+    /// <summary>
+    /// 
+    /// </summary>
+    public sealed class TraceProgress
     {
         public SoftwareBitmap Bitmap
         {
             get;
         }
 
-        public TraceProgressEventArgs(SoftwareBitmap bitmap)
+        public TraceProgress(SoftwareBitmap bitmap)
         {
             Bitmap = bitmap;
         }
     }
 
+    /// <summary>
+    /// 
+    /// </summary>
     public sealed class RayTracer
     {
+        internal readonly Vector3 Eye = Vector3.Zero;
+        internal readonly Vector3 EyeDirection = Vector3.UnitZ;
+        internal readonly Vector3 Vx = Vector3.UnitX;
+        internal readonly Vector3 Vy = Vector3.UnitY;
+        internal const float Threshold = 0.01f;
+
         private readonly int bitmapWidth;
         private readonly int bitmapHeight;
 
-        public event EventHandler<TraceProgressEventArgs> Progress;
+        public IObservable<TraceProgress> Trace => Observable.Defer(DoTrace);
 
-        public IObservable<TraceProgressEventArgs> Trace => Observable.Defer(DoTrace);
-
-        public Color AmbientColor
+        public Scene Scene
         {
             get;
             set;
@@ -48,7 +58,7 @@ namespace RayTracing
             this.bitmapHeight = bitmapHeight;
         }
 
-        private Task TraceAsync(IObserver<TraceProgressEventArgs> observer, CancellationToken cancellationToken)
+        private Task TraceAsync(IObserver<TraceProgress> observer, CancellationToken cancellationToken)
         {
             var bitmap = new WriteableBitmap(bitmapWidth, bitmapHeight);
             var pixelBuffer = bitmap.PixelBuffer.ToArray();
@@ -69,7 +79,7 @@ namespace RayTracing
                     BitmapAlphaMode.Premultiplied
                 );
 
-                observer.OnNext(new TraceProgressEventArgs(source));
+                observer.OnNext(new TraceProgress(source));
             }
 
             return Task.Run(() =>
@@ -77,6 +87,7 @@ namespace RayTracing
                 try
                 {
                     var currentChunkSize = 0;
+                    var ray = new Ray(Vector3.Zero, Vector3.Zero);
 
                     for (var line = 0; line < height; line++)
                     {
@@ -88,7 +99,9 @@ namespace RayTracing
 
                             cancellationToken.ThrowIfCancellationRequested();
 
-                            TracePixel(pixelBuffer, index);
+                            Camera(column, line, ref ray);
+
+                            TracePixel(pixelBuffer, index, Scene.AmbientColor);
 
                             if (chunkSize < currentChunkSize++)
                             {
@@ -112,51 +125,65 @@ namespace RayTracing
             }, cancellationToken);
         }
 
-        private IObservable<TraceProgressEventArgs> DoTrace()
+        private IObservable<TraceProgress> DoTrace()
         {
             Debug.WriteLine("Raytrace start");
 
-            var subject = new Subject<TraceProgressEventArgs>();
+            var subject = new Subject<TraceProgress>();
 
             TraceAsync(subject, CancellationToken.None).RunAndForget();
 
             return subject.AsObservable();
         }
 
-        private void TracePixel(byte[] pixelBuffer, int position)
+        private void Camera(int column, int line, ref Ray ray)
         {
-            //pixelBuffer[position + 0] = color[0]; // B
-            //pixelBuffer[position + 1] = color[1]; // G
-            //pixelBuffer[position + 2] = color[2]; // R
-            //pixelBuffer[position + 3] = 255; // A
-            
-            pixelBuffer[position + 0] = AmbientColor.B; // B
-            pixelBuffer[position + 1] = AmbientColor.G; // G
-            pixelBuffer[position + 2] = AmbientColor.R; // R
-            pixelBuffer[position + 3] = AmbientColor.A; // A
+            ray.Origin = Eye;
+            ray.Direction = Vector3.Normalize(EyeDirection + Vx * column + Vy * line);
         }
 
-        private void Report(byte[] pixelBuffer, int width, int height)
+        private Vector3 TraceRay(Medium medium, float weight, Ray ray)
         {
-            var source = SoftwareBitmap.CreateCopyFromBuffer(
-                pixelBuffer.AsBuffer(),
-                BitmapPixelFormat.Bgra8,
-                width,
-                height,
-                BitmapAlphaMode.Premultiplied
-            );
+            var distance = float.PositiveInfinity;
+            var figure = Scene.Intersect(ray, distance);
+            var color = Vector3.Zero;
 
-            DoProgress(new TraceProgressEventArgs(source));
-        }
-
-        private void DoProgress(TraceProgressEventArgs e)
-        {
-            var handler = Progress;
-
-            if (null != handler)
+            if (null != figure)
             {
-                handler.Invoke(this, e);
+                color = Shade(medium, weight, ray.Point(distance), ray.Direction, figure);
+
+                if (medium.Betta > Threshold)
+                {
+                    color *= (float) Math.Exp(-distance * medium.Betta);
+                }
+                else
+                {
+                    color = Scene.ShadeBackground(ray);
+                }
             }
+
+            return color;
+        }
+
+        private Vector3 Shade(Medium medium, float weight, Vector3 point, Vector3 view, Figure figure)
+        {
+            var ray = new Ray(point, Vector3.Zero);
+            var texture = figure.FindTexture(point);
+
+            if (null != texture)
+            {
+                var vn = view & texture.N;
+            }
+            
+            throw new NotImplementedException();
+        }
+
+        private static void TracePixel(byte[] pixels, int position, Color color)
+        {
+            pixels[position + 0] = color.B; // B
+            pixels[position + 1] = color.G; // G
+            pixels[position + 2] = color.R; // R
+            pixels[position + 3] = color.A; // A
         }
     }
 }

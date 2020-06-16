@@ -1,10 +1,21 @@
 ﻿using System;
+using System.ComponentModel.DataAnnotations;
+using System.Numerics;
 using Windows.UI;
 
 namespace RayTracing
 {
     public static class ColorExtensions
     {
+        public static Vector3 ToVector3(this Color color)
+        {
+            var r = (float) color.R / byte.MaxValue;
+            var g = (float) color.G / byte.MaxValue;
+            var b = (float) color.B / byte.MaxValue;
+
+            return new Vector3(r, g, b);
+        }
+
         /// <summary>
         /// Converts a <see cref="Color"/> to an <see cref="HslColor"/>.
         /// </summary>

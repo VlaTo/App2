@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace App2
+namespace LibraProgramming.Windows.Core
 {
     internal static class Condition<TObject>
     {

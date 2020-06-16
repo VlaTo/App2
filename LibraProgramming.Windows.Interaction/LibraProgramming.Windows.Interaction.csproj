@@ -114,6 +114,10 @@
     <EmbeddedResource Include="Properties\LibraProgramming.Windows.Interaction.rd.xml" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\LibraProgramming.Windows.Core\LibraProgramming.Windows.Core.csproj">
+      <Project>{7cee7816-3dad-4928-9078-b80e2c437e4f}</Project>
+      <Name>LibraProgramming.Windows.Core</Name>
+    </ProjectReference>
     <ProjectReference Include="..\LibraProgramming.Windows.Interactivity\LibraProgramming.Windows.Interactivity.csproj">
       <Project>{2d4157f0-799c-4efc-b768-aa60f8864cc3}</Project>
       <Name>LibraProgramming.Windows.Interactivity</Name>

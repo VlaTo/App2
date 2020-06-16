@@ -1,5 +1,5 @@
-﻿using System;
-using LibraProgramming.Windows.Interactivity;
+﻿using LibraProgramming.Windows.Core;
+using System;
 
 namespace LibraProgramming.Windows.Interaction
 {

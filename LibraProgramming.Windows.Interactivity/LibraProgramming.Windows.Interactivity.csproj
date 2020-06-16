@@ -115,7 +115,6 @@
     <Compile Include="EventRegistration.cs" />
     <Compile Include="EventTrigger.cs" />
     <Compile Include="EventTriggerBase.cs" />
-    <Compile Include="Extensions\CancellationTokenExtensions.cs" />
     <Compile Include="FrameworkElementCollection.cs" />
     <Compile Include="FrameworkElementExtension.cs" />
     <Compile Include="IAttachedObject.cs" />
@@ -142,9 +141,7 @@
     <Compile Include="TriggerCollection.cs" />
     <Compile Include="TypeConstraintAttribute.cs" />
     <Compile Include="VisualStateUtilities.cs" />
-    <Compile Include="WeakEventHandler.cs" />
     <Compile Include="WeakLifetimeObserver.cs" />
-    <Compile Include="WorkItemExecutor.cs" />
     <EmbeddedResource Include="Properties\LibraProgramming.Windows.Interaction.rd.xml" />
   </ItemGroup>
   <ItemGroup>
@@ -152,7 +149,15 @@
       <Version>6.2.10</Version>
     </PackageReference>
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <ProjectReference Include="..\LibraProgramming.Windows.Core\LibraProgramming.Windows.Core.csproj">
+      <Project>{7cee7816-3dad-4928-9078-b80e2c437e4f}</Project>
+      <Name>LibraProgramming.Windows.Core</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Extensions\" />
+  </ItemGroup>
   <PropertyGroup Condition=" '$(VisualStudioVersion)' == '' or '$(VisualStudioVersion)' &lt; '14.0' ">
     <VisualStudioVersion>14.0</VisualStudioVersion>
   </PropertyGroup>

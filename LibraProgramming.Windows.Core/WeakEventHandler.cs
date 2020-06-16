@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Reflection;
 
-namespace LibraProgramming.Windows.Interactivity
+namespace LibraProgramming.Windows.Core
 {
     public sealed class WeakEventHandler<TArgs>
         where TArgs : EventArgs

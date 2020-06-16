@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Windows.Input;
 
-namespace App2
+namespace LibraProgramming.Windows.Core
 {
     public class DelegateCommand : ICommand
     {

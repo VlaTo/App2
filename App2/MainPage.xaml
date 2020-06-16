@@ -50,8 +50,10 @@
             HorizontalScrollBarVisibility="Auto"
             VerticalScrollBarVisibility="Auto"
             VerticalScrollMode="Enabled"
-            HorizontalScrollMode="Enabled">
-            <Border
+            HorizontalScrollMode="Enabled"
+            VerticalContentAlignment="Center"
+            HorizontalContentAlignment="Center">
+            <Grid
                 BorderBrush="DimGray"
                 BorderThickness="1"
                 Width="640"
@@ -59,10 +61,8 @@
                 <Image
                     x:Name="PreviewImage"
                     x:FieldModifier="private"
-                    Width="640"
-                    Height="480"
                 />
-            </Border>
+            </Grid>
         </ScrollViewer>
     </Grid>
 </Page>
