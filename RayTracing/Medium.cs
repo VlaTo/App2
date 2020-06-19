@@ -11,5 +11,11 @@
         {
             get;
         }
+
+        public Medium(float reference, float betta)
+        {
+            Reference = reference;
+            Betta = betta;
+        }
     }
 }

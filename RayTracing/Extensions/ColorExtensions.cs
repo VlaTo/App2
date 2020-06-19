@@ -1,9 +1,8 @@
 ﻿using System;
-using System.ComponentModel.DataAnnotations;
 using System.Numerics;
 using Windows.UI;
 
-namespace RayTracing
+namespace RayTracing.Extensions
 {
     public static class ColorExtensions
     {
@@ -14,6 +13,15 @@ namespace RayTracing
             var b = (float) color.B / byte.MaxValue;
 
             return new Vector3(r, g, b);
+        }
+
+        public static Color ToColor(this Vector3 value)
+        {
+            var r = (byte) (byte.MaxValue * value.X);
+            var g = (byte) (byte.MaxValue * value.Y);
+            var b = (byte) (byte.MaxValue * value.Z);
+
+            return Color.FromArgb(0, r, g, b);
         }
 
         /// <summary>

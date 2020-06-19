@@ -121,7 +121,8 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Camera.cs" />
-    <Compile Include="ColorExtensions.cs" />
+    <Compile Include="Extensions\ColorExtensions.cs" />
+    <Compile Include="Extensions\RayExtensions.cs" />
     <Compile Include="Medium.cs" />
     <Compile Include="Ray.cs" />
     <Compile Include="Scene.cs" />
@@ -135,6 +136,7 @@
     <Compile Include="Area.cs" />
     <Compile Include="Dimension.cs" />
     <Compile Include="Sphere.cs" />
+    <Compile Include="SurfaceData.cs" />
     <Compile Include="SurfaceInfo.cs" />
     <EmbeddedResource Include="Properties\RayTracing.rd.xml" />
   </ItemGroup>
@@ -161,6 +163,7 @@
       <Name>LibraProgramming.Windows.Core</Name>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup />
   <PropertyGroup Condition=" '$(VisualStudioVersion)' == '' or '$(VisualStudioVersion)' &lt; '14.0' ">
     <VisualStudioVersion>14.0</VisualStudioVersion>
   </PropertyGroup>

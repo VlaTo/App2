@@ -1,15 +1,13 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Numerics;
 using Windows.UI;
+using RayTracing.Extensions;
 
 namespace RayTracing
 {
-    public class Scene : IEnumerable<Figure>
+    public class Scene
     {
-        private readonly List<Figure> figures;
-
         public Color AmbientColor
         {
             get;
@@ -22,28 +20,35 @@ namespace RayTracing
             set;
         }
 
+        public List<Figure> Figures
+        {
+            get;
+        }
+
         public Scene()
         {
-            figures = new List<Figure>();
+            Figures = new List<Figure>();
         }
 
-        public void Add(Figure figure)
+        public Figure Intersect(Ray ray, ref float distance)
         {
-            if (null == figure)
+            var targetDistance = float.PositiveInfinity;
+            Figure target = null;
+
+            for (var index = 0; index < Figures.Count; index++)
             {
-                throw new ArgumentNullException(nameof(figure));
+                var figure = Figures[index];
+
+                if (figure.TryIntersect(ray, ref distance) && distance < targetDistance)
+                {
+                    targetDistance = distance;
+                    target = figure;
+                }
             }
 
-            figures.Add(figure);
-        }
+            distance = targetDistance;
 
-        public IEnumerator<Figure> GetEnumerator() => figures.GetEnumerator();
-
-        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-
-        public Figure Intersect(Ray ray, float distance)
-        {
-            throw new NotImplementedException();
+            return target;
         }
 
         public Vector3 ShadeBackground(Ray ray) => AmbientColor.ToVector3();

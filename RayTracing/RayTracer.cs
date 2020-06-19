@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using Windows.Graphics.Imaging;
 using Windows.UI;
 using Windows.UI.Xaml.Media.Imaging;
+using RayTracing.Extensions;
 
 namespace RayTracing
 {
@@ -35,10 +36,7 @@ namespace RayTracing
     /// </summary>
     public sealed class RayTracer
     {
-        internal readonly Vector3 Eye = Vector3.Zero;
-        internal readonly Vector3 EyeDirection = Vector3.UnitZ;
-        internal readonly Vector3 Vx = Vector3.UnitX;
-        internal readonly Vector3 Vy = Vector3.UnitY;
+        internal readonly Medium Air = new Medium(1.0f, 0.0f);
         internal const float Threshold = 0.01f;
 
         private readonly int bitmapWidth;
@@ -100,7 +98,7 @@ namespace RayTracing
                 BitmapAlphaMode.Premultiplied
             );
 
-            var contexts = new List<TraceAreaContext>();
+            var areas = new List<Area>();
             var canvas = new Dimension(width, height);
             var cell = new Dimension(16);
             
@@ -113,43 +111,54 @@ namespace RayTracing
                     var w = Min.From(cell.Width, width - x);
                     var area = new Area(x, y, w, h);
 
-                    contexts.Add(new TraceAreaContext(area));
+                    areas.Add(area);
                 }
             }
 
             return Task.Factory.StartNew(() =>
                 {
+                    //Vector3 Eye = Vector3.Zero;
+                    //Vector3 EyeDirection = Vector3.UnitZ;
+                    //Vector3 Vx = Vector3.UnitX;
+                    //Vector3 Vy = Vector3.UnitY;
+
                     try
                     {
+
                         var center = new PointF(width / 2.0f, height / 2.0f);
-                        var targets = contexts.ToArray();
-                        var colors = new[] {Colors.Cyan, Colors.CadetBlue, Colors.DarkCyan};
+                        //var targets = areas.ToArray();
+                        var ray = new Ray(Vector3.Zero, Vector3.Zero);
+                        var context = new TraceContext(Scene.AmbientColor.ToVector3());
 
-                        for (var index = 0; index < targets.Length; index++)
+                        for (var index = 0; index < areas.Count; index++)
                         {
-                            var context = targets[index];
-                            var color = colors[index % colors.Length];
-                            var start = -center.X + context.TargetArea.X;
-                            var origin = new Vector3(start, -center.Y + context.TargetArea.Y, -10.0f);
+                            var area = areas[index];
+                            //var color = colors[index % colors.Length];
+                            var start = -center.X + area.X;
+                            var origin = new PointF(start, center.Y - area.Y);
 
-                            for (var line = context.TargetArea.Y; line < context.TargetArea.Bottom; line++)
+                            for (var line = area.Y; line < area.Bottom; line++)
                             {
                                 var offset = stride * line;
 
-                                for (var column = context.TargetArea.X; column < context.TargetArea.Right; column++)
+                                for (var column = area.X; column < area.Right; column++)
                                 {
                                     var position = offset + (column * 4);
 
-                                    cancellationToken.ThrowIfCancellationRequested();
+                                    ray.Move(Scene.Camera, ref origin);
 
-                                    TracePixel(ref pixelBuffer, position, ref origin, ref color);
+                                    var color = TraceRay(context, Air, 1.0f, ray);
+
+                                    PutPixel(ref pixelBuffer, position, ref color);
 
                                     origin.X++;
                                 }
 
                                 origin.X = start;
-                                origin.Y++;
+                                origin.Y--;
                             }
+
+                            cancellationToken.ThrowIfCancellationRequested();
 
                             var source = CreateBitmap();
 
@@ -173,7 +182,7 @@ namespace RayTracing
             );
         }
 
-        private static void TracePixel(ref byte[] pixelBuffer, int position, ref Vector3 origin, ref Color color)
+        private static void PutPixel(ref byte[] pixelBuffer, int position, ref Color color)
         {
             pixelBuffer[position + 0] = color.B; // B
             pixelBuffer[position + 1] = color.G; // G
@@ -181,44 +190,56 @@ namespace RayTracing
             pixelBuffer[position + 3] = color.A; // A
         }
 
-        private void Camera(int column, int line, ref Ray ray)
-        {
-            ray.Origin = Eye;
-            ray.Direction = Vector3.Normalize(EyeDirection + Vx * column + Vy * line);
-        }
-
-        private Vector3 TraceRay(Medium medium, float weight, Ray ray)
+        private Color TraceRay(TraceContext context, Medium medium, float weight, Ray ray)
         {
             var distance = float.PositiveInfinity;
-            var figure = Scene.Intersect(ray, distance);
-            var color = Vector3.Zero;
+            var figure = Scene.Intersect(ray, ref distance);
+            Vector3 color;
 
             if (null != figure)
             {
-                color = Shade(medium, weight, ray.Point(distance), ray.Direction, figure);
+                color = Shade(context, medium, weight, ray.Point(distance), ray.Direction, figure);
 
                 if (medium.Betta > Threshold)
                 {
-                    color *= (float)Math.Exp(-distance * medium.Betta);
-                }
-                else
-                {
-                    color = Scene.ShadeBackground(ray);
+                    color *= (float) Math.Exp(-distance * medium.Betta);
                 }
             }
+            else
+            {
+                color = Scene.ShadeBackground(ray);
+            }
 
-            return color;
+            return color.ToColor();
         }
 
-        private Vector3 Shade(Medium medium, float weight, Vector3 point, Vector3 view, Figure figure)
+        private Vector3 Shade(TraceContext context, Medium medium, float weight, Vector3 point, Vector3 view, Figure figure)
         {
             var ray = new Ray(point, Vector3.Zero);
-            var texture = figure.FindTexture(point);
+            var info = figure.FindTexture(ref point);
+            var entering = 1;
 
-            //if (null != texture)
-            //var vn = view & texture.N;
+            if (null == info)
+            {
+                return context.AmbientColor;
+            }
 
-            throw new NotImplementedException();
+            var vn = Vector3.Dot(view, info.Normal);
+
+            if (0.0f < vn)
+            {
+                info.Normal = -info.Normal;
+                vn = -vn;
+                entering = 0;
+            }
+
+            ray.Origin = point;
+
+            var color = context.AmbientColor * info.Data.Color * info.Data.Ka;
+
+            //
+
+            return color;
         }
 
         /// <summary>
@@ -234,6 +255,22 @@ namespace RayTracing
             public TraceAreaContext(Area targetArea)
             {
                 TargetArea = targetArea;
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        private sealed class TraceContext
+        {
+            public Vector3 AmbientColor
+            {
+                get;
+            }
+
+            public TraceContext(Vector3 ambientColor)
+            {
+                AmbientColor = ambientColor;
             }
         }
     }

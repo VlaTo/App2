@@ -4,22 +4,23 @@ namespace RayTracing
 {
     public abstract class Figure
     {
-        public SurfaceInfo Material
+        public SurfaceData Material
         {
             get;
+            set;
         }
 
-        public virtual SurfaceInfo FindTexture(Vector3 point)
+        public virtual SurfaceInfo FindTexture(ref Vector3 point)
         {
-            var clone = Material.Clone();
-            
-            clone.Normal = FindNormal(point);
-
-            return clone;
+            return new SurfaceInfo
+            {
+                Data = Material,
+                Normal = FindNormal(ref point)
+            };
         }
 
-        public abstract Vector3 FindNormal(Vector3 point);
+        public abstract Vector3 FindNormal(ref Vector3 point);
 
-        public abstract int Intersect(Ray ray, float distance);
+        public abstract bool TryIntersect(Ray ray, ref float distance);
     }
 }
